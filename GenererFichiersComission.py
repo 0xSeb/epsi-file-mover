@@ -24,7 +24,7 @@ def create_student_dirs(filename):
 
 
 def copy_final_thesis(config, year):
-    print("Copie des mémoires " + year + " en cours ...")
+    print("Copie des mémoires " + str(year) + " en cours ...")
     students_file_name = config['liste_etudiants']
     dest_dir = config['destination']
     thesis_dir = os.path.join(config['dossier_parent'], 'MEMOIRE I5\MEMOIRE-' + str(year))
@@ -57,7 +57,7 @@ def copy_report_card(config, promo, year):
         report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I5", "Bulletins annuels définitifs")
         if not os.path.isdir(report_card_dir):
             report_card_dir_not_found = report_card_dir
-            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I2", "Bulletins annuels definitifs")
+            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I2", "Bulletins annuels définitifs")
             if not os.path.isdir(report_card_dir):
                 print("[ERREUR] Dossier des bulletins I2-I5 non trouvé."
                       "\nChemins testés:\n" +
@@ -65,10 +65,10 @@ def copy_report_card(config, promo, year):
                       report_card_dir + "\n")
                 handle_quit(1)
     elif promo == "I1":
-        report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I4", "Definitifs")
+        report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I4", "Bulletins annuels définitifs")
         if not os.path.isdir(report_card_dir):
             report_card_dir_not_found = report_card_dir
-            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I1", "Definitifs")
+            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I1", "Bulletins annuels définitifs")
             if not os.path.isdir(report_card_dir):
                 print("[ERREUR] Dossier des bulletins I1-I4 non trouvé."
                       "\nChemins testés:\n" +
@@ -77,7 +77,7 @@ def copy_report_card(config, promo, year):
                 handle_quit(1)
     elif promo == "B3" or promo == "B2" or promo == "B1":
         report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, promo,
-                                       "Definitifs")
+                                       "Bulletins annuels définitifs")
         if not os.path.isdir(report_card_dir):
             print("[ERREUR] Dossier des bulletins " + promo + " non trouvé.\nChemin testé:\n" + report_card_dir)
             handle_quit(1)
@@ -108,7 +108,7 @@ def core(promo, year, config):
 
 
 def handle_quit(code):
-    input('\nAppuyez sur une touche pour quitter...')
+    input('\nAppuyez sur Entrée pour quitter...')
     exit(code)
 
 
