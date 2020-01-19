@@ -1,5 +1,5 @@
-ABOMNES_Gauthier
-AMBLARD_Victor
+ABOMNES_GauTHiér
+AmBLARD_Victor
 BAILLIN_Simon
 BATBY_Alex
 BELARD_Mélanie

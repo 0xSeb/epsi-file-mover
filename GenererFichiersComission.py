@@ -4,11 +4,23 @@ import yaml
 from re import search
 from shutil import copyfile
 import subprocess
+import unicodedata
+import re
+
 
 def read_config_file():
     with open("config.yml", 'r') as confFile:
         config = yaml.load(confFile, Loader=yaml.FullLoader)
     return config
+
+# Return string without accents
+def remove_diacritics(text):
+    normalized = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in normalized if unicodedata.category(c) != "Mn")
+
+# Match strings ignoring case and accents
+def lax_matcher(str_a, str_b):
+    return re.search(r".*" + remove_diacritics(str_a) + ".*",r"" + remove_diacritics(str_b), re.IGNORECASE)
 
 
 def create_student_dirs(filename):
@@ -43,8 +55,10 @@ def copy_final_thesis_files(dest_dir, students_file_name, thesis_dir):
         for student in students:
             for folder in os.listdir(thesis_dir):
                 for file in os.listdir(os.path.join(thesis_dir, folder)):
-                    if search(student, file):
-                        copyfile(os.path.join(thesis_dir, folder, file), os.path.join(dest_dir, student, file))
+                    if  lax_matcher(student, file):
+                        match = lax_matcher(student, os.path.join(dest_dir, student))
+                        if match:
+                            copyfile(os.path.join(thesis_dir, folder, file), os.path.join(match.group(), file))
 
 
 def copy_report_card(config, promo, year):
@@ -54,10 +68,12 @@ def copy_report_card(config, promo, year):
     dest_dir = config['destination']
     report_card_dir = ""
     if promo == "I2":
-        report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I5", "Bulletins annuels définitifs")
+        report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I5",
+                                       "Bulletins annuels définitifs")
         if not os.path.isdir(report_card_dir):
             report_card_dir_not_found = report_card_dir
-            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I2", "Bulletins annuels définitifs")
+            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I2",
+                                           "Bulletins annuels définitifs")
             if not os.path.isdir(report_card_dir):
                 print("[ERREUR] Dossier des bulletins I2-I5 non trouvé."
                       "\nChemins testés:\n" +
@@ -65,10 +81,12 @@ def copy_report_card(config, promo, year):
                       report_card_dir + "\n")
                 handle_quit(1)
     elif promo == "I1":
-        report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I4", "Bulletins annuels définitifs")
+        report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I4",
+                                       "Bulletins annuels définitifs")
         if not os.path.isdir(report_card_dir):
             report_card_dir_not_found = report_card_dir
-            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I1", "Bulletins annuels définitifs")
+            report_card_dir = os.path.join(config['dossier_parent'], 'BULLETINS', school_year, "I1",
+                                           "Bulletins annuels définitifs")
             if not os.path.isdir(report_card_dir):
                 print("[ERREUR] Dossier des bulletins I1-I4 non trouvé."
                       "\nChemins testés:\n" +
@@ -88,8 +106,10 @@ def copy_report_card(config, promo, year):
         students = students_file.read().splitlines()
         for student in students:
             for file in os.listdir(report_card_dir):
-                if search(student, file):
-                    copyfile(os.path.join(report_card_dir, file), os.path.join(dest_dir, student, file))
+                if  lax_matcher(student,file):
+                    match = lax_matcher(student,os.path.join(dest_dir, student))
+                    if match:
+                        copyfile(os.path.join(report_card_dir, file), os.path.join(match.group(), file))
     print('Ok.\n')
 
 
@@ -117,14 +137,31 @@ def handle_wrong_promo(promo):
     handle_quit(1)
 
 
+def main_menu():
+    print('Que voulez-vous faire? ')
+    actions = {
+        "1": "Copier les mémoires + bulletins des I2",
+        "2": "Copier les bulletins des B3",
+        "3": "Copier des fichiers contenant un mot particulier"
+    }
+    for idx, act in actions.items():
+        print(idx + " ==> " + act)
+    action = int(input('\n\n votre choix ==> '))
+    if not (str(action) in actions):
+        print("[ERREUR] Action non reconnue : " + str(action))
+    handle_action(action)
+
+
+def handle_action(action):
+    if (action == 1 or action == 2):
+        annee_promotion = str(input('\nEntrez l\'année de rentrée de la promotion: (2019, 2018 ...)\n-->   '))
+        configFile = read_config_file()
+        promo = "empty"
+        if action == 1: promo = "I2"
+        if action == 2: promo = "B3"
+        core(promo, annee_promotion, configFile)
+
 if __name__ == '__main__':
-    promotion = str(input('Quelle promo souhaitez-vous manipuler ? (Entrer "B3" ou "I2" ) \n-->   '))
-    if promotion != "B3" and promotion != "I2":
-        handle_wrong_promo(promotion)
-    annee_promotion = str(input('\nEntrez l\'année de rentrée de la promotion: (2019, 2018 ...)\n-->   '))
-    configFile = read_config_file()
-    create_student_dirs(configFile['liste_etudiants'])
-    core(promotion, annee_promotion, configFile)
-    print("\nYouhou ! Opérations terminées ! :)\n")
-    subprocess.Popen(r'explorer "' + configFile['destination'] + '"')
+    main_menu()
     handle_quit(0)
+
