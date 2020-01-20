@@ -6,6 +6,8 @@ from shutil import copyfile
 import subprocess
 import unicodedata
 import re
+from pathlib import Path
+import ntpath
 
 
 def read_config_file():
@@ -13,14 +15,16 @@ def read_config_file():
         config = yaml.load(confFile, Loader=yaml.FullLoader)
     return config
 
+
 # Return string without accents
 def remove_diacritics(text):
     normalized = unicodedata.normalize("NFKD", text)
     return "".join(c for c in normalized if unicodedata.category(c) != "Mn")
 
+
 # Match strings ignoring case and accents
 def lax_matcher(str_a, str_b):
-    return re.search(r".*" + remove_diacritics(str_a) + ".*",r"" + remove_diacritics(str_b), re.IGNORECASE)
+    return re.search(r".*" + remove_diacritics(str_a) + ".*", r"" + remove_diacritics(str_b), re.IGNORECASE)
 
 
 def create_student_dirs(filename):
@@ -55,7 +59,7 @@ def copy_final_thesis_files(dest_dir, students_file_name, thesis_dir):
         for student in students:
             for folder in os.listdir(thesis_dir):
                 for file in os.listdir(os.path.join(thesis_dir, folder)):
-                    if  lax_matcher(student, file):
+                    if lax_matcher(student, file):
                         match = lax_matcher(student, os.path.join(dest_dir, student))
                         if match:
                             copyfile(os.path.join(thesis_dir, folder, file), os.path.join(match.group(), file))
@@ -106,8 +110,8 @@ def copy_report_card(config, promo, year):
         students = students_file.read().splitlines()
         for student in students:
             for file in os.listdir(report_card_dir):
-                if  lax_matcher(student,file):
-                    match = lax_matcher(student,os.path.join(dest_dir, student))
+                if lax_matcher(student, file):
+                    match = lax_matcher(student, os.path.join(dest_dir, student))
                     if match:
                         copyfile(os.path.join(report_card_dir, file), os.path.join(match.group(), file))
     print('Ok.\n')
@@ -137,6 +141,17 @@ def handle_wrong_promo(promo):
     handle_quit(1)
 
 
+def fuzzyFind(word, dir):
+    print('\nRecherche des fichiers ...')
+    matches = []
+    word = "*" + remove_diacritics(word) + "*"
+    for filename in Path(dir).rglob(word):
+        if os.path.isfile(filename):
+            print('--> ' + str(filename))
+            matches.append(filename)
+    return matches
+
+
 def main_menu():
     print('Que voulez-vous faire? ')
     actions = {
@@ -152,16 +167,34 @@ def main_menu():
     handle_action(action)
 
 
+def path_leaf(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
+
+
+def simpleFileCopier(files, destination):
+    print("Début de copie des fichiers...")
+    for file in files:
+        copyfile(file, os.path.join(destination, path_leaf(file)))
+
+
 def handle_action(action):
     if (action == 1 or action == 2):
-        annee_promotion = str(input('\nEntrez l\'année de rentrée de la promotion: (2019, 2018 ...)\n-->   '))
+        annee_promotion = str(input("\nEntrez l\'année de rentrée de la promotion: (2019, 2018 ...)\n-->   "))
         configFile = read_config_file()
         promo = "empty"
         if action == 1: promo = "I2"
         if action == 2: promo = "B3"
         core(promo, annee_promotion, configFile)
+    if (action == 3):
+        query = str(input("\nEntrez le mot que vous recherchez : \n --> "))
+        source_folder = str(input("\nEntrez le dossier source : \n --> "))
+        target_folder = str(input("\nEntrez le dossier de sortie : \n -->"))
+        files = fuzzyFind(query, source_folder)
+        simpleFileCopier(files, target_folder)
+        print("Copie terminée ! :)")
+
 
 if __name__ == '__main__':
     main_menu()
     handle_quit(0)
-
